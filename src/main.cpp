@@ -37,32 +37,30 @@ int main() {
 
     std::cout << "Server listening for connections on port " << port << " ..." << std::endl;
 
-    int addrlen = sizeof(address);
-    int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+    while (true) {
+        int addrlen = sizeof(address);
+        int new_socket = accept(server_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
 
-    if (new_socket < 0) {
-        std::cerr << "Accept failed" << std::endl;
-        return 1;
+        if (new_socket < 0) {
+            std::cerr << "Accept failed" << std::endl;
+            continue;
+        }
+
+        std::cout << "Client Connected" << std::endl;
+
+        std::string body = "Hello from persistent C++ server!\n";
+
+        std::string response = 
+            "HTTP/1.1 200 OK\r\n"
+            "Content-Type: text/plain\r\n"
+            "Content-Length: " + std::to_string(body.length()) + "\r\n"
+            "\r\n" + body;
+
+        send(new_socket, response.c_str(), response.size(), 0);
+
+        std::cout << "Response sent" << std::endl;
+
+        close(new_socket);
+        std::cout << "Connection Closed!" << std::endl;
     }
-
-    std::cout << "Client connected" << std::endl;
-
-    std::string body = "Hello from C++ server!\n";
-
-    std::string response =
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/plain\r\n"
-        "Content-Length: " + std::to_string(body.size()) + "\r\n"
-        "\r\n" +
-        body;
-
-    send(new_socket, response.c_str(), response.size(), 0);
-
-
-    std::cout << "Message sent to client" << std::endl;
-
-    close(new_socket);
-    close(server_fd);
-
-    return 0;
 }
