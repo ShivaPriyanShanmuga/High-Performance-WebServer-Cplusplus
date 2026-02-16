@@ -4,6 +4,7 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sstream>
 
 int main() {
     int server_fd;
@@ -53,21 +54,50 @@ int main() {
         int bytes_read = read(new_socket, buffer, sizeof(buffer));
 
         if (bytes_read > 0) {
-            std::cout << "---- Incoming Request ----" << std::endl;
-            std::cout << buffer << std::endl;
+
+            std::string request(buffer, bytes_read);
+
+            size_t line_end = request.find("\r\n"); // i know this is not going to be std::string::npos because the first line in a http request is gonna be present
+            std::string request_line = request.substr(0, line_end);
+
+            std::cout << "Request Line: " << request_line << std::endl;
+
+            std::istringstream stream(request_line);
+            std::string method, path, version;
+            stream >> method >> path >> version;
+
+            std::cout << "Method: " << method << std::endl;
+            std::cout << "Path: " << path << std::endl;
+            std::cout << "Version: " << version << std::endl;
+
+            std::string body;
+            if (path == "/") {
+                body = "Welcome to the home page!\n";
+            } else if (path == "/hello") {
+                body = "Hello from Route /hello!\n";
+            } else {
+                body = "404 Not Found\n";
+            }
+
+            std::string response;
+
+            if (path == "/" || path == "/hello") {
+                response = 
+                    "HTTP/1.1 200 OK\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                    "\r\n" + body;
+            } else {
+                response = 
+                    "HTTP/1.1 404 Not Found\r\n"
+                    "Content-Type: text/plain\r\n"
+                    "Content-Length: " + std::to_string(body.size()) + "\r\n"
+                    "\r\n" + body;
+            }
+
+            send(new_socket, response.c_str(), response.size(), 0);
+            std::cout << "Response sent" << std::endl;
         }
-
-        std::string body = "Hello from persistent C++ server!\n";
-
-        std::string response = 
-            "HTTP/1.1 200 OK\r\n"
-            "Content-Type: text/plain\r\n"
-            "Content-Length: " + std::to_string(body.length()) + "\r\n"
-            "\r\n" + body;
-
-        send(new_socket, response.c_str(), response.size(), 0);
-
-        std::cout << "Response sent" << std::endl;
 
         close(new_socket);
         std::cout << "Connection Closed!" << std::endl;
