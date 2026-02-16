@@ -48,6 +48,15 @@ int main() {
 
         std::cout << "Client Connected" << std::endl;
 
+        char buffer[4096] = {0};
+
+        int bytes_read = read(new_socket, buffer, sizeof(buffer));
+
+        if (bytes_read > 0) {
+            std::cout << "---- Incoming Request ----" << std::endl;
+            std::cout << buffer << std::endl;
+        }
+
         std::string body = "Hello from persistent C++ server!\n";
 
         std::string response = 
